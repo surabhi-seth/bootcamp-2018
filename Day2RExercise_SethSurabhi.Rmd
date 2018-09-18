@@ -16,10 +16,10 @@ str(gapminder)
 ```
 
 
+
 ```{r}
 years <- unique(gapminder$year)
 str(years)
-length(years)
 
 resultlifeexp <- data.frame(matrix(nrow = length(years), ncol = 3))
 colnames(resultlifeexp) <- c("sno", "yr", "lifeexp")

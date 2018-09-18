@@ -1,0 +1,114 @@
+---
+title: "R Day 2"
+author: "Surabhi S"
+date: "9/18/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+here::here("data", "gapminder5.csv")
+gapminder <- read.csv(here::here("data", "gapminder5.csv"),stringsAsFactors = FALSE)
+str(gapminder)
+```
+
+
+```{r}
+years <- unique(gapminder$year)
+str(years)
+length(years)
+
+resultlifeexp <- data.frame(matrix(nrow = length(years), ncol = 3))
+colnames(resultlifeexp) <- c("sno", "yr", "lifeexp")
+str(resultlifeexp)
+y <- 1
+for (i in years)
+{
+  resultlifeexp[y,"lifeexp"] <- mean(gapminder$lifeExp[gapminder$year==i])
+  resultlifeexp[y,"yr"] <- i
+  y <- y +1
+}
+```
+
+```{r}
+apply(gapminder, 2, mean)
+as.matrix(gapminder)
+```
+
+```{r}
+i <- 1987
+
+while(i < 2003)
+{
+  sd <- sd(gapminder$lifeExp[gapminder$year==i])
+  print(paste0(i," ", sd))
+  i <- i + 1
+}
+```
+
+```{r}
+set.seed(4)
+random_year <- sample(years,1)
+random_year
+
+if(random_year > 1977)
+{
+  print("Condition A")
+}else
+{
+  print("Condition B")
+}
+```
+
+```{r}
+i <- 1987
+years
+for (i in years)
+{
+  if(i < 1987)
+  {
+  print("Lesss than 1987")
+  }else
+  {
+   y<- mean(gapminder$pop[gapminder$year==i])
+  print(paste("Condition B i:", y))
+  }
+}
+```
+```{r}
+#get_values <-
+ # function(df, variable = "continent") {
+  #  vals <- unique(df[[variable]])
+   # print(paste0(variable, ": ", vals))
+  #}
+
+report_min_max <- 
+  function(df, variable, continent) {
+    var <- df[[variable]][df$continent == continent]
+    min_le <- min(var)
+    max_le <- max(var)
+    cat("Continent:", continent, 
+        "\nMin Life Expectancy:", min_le,
+        "\nMax Life Expectancy:", max_le)
+  }
+
+report_min_max(gapminder, "lifeExp", "Asia")
+```
+```{r}
+viz_lm <-
+  function(df, dv, iv, year) {
+    dat <- df[df[["year"]] == year, ]
+    y <- log(dat[[dv]])
+    x <- log(dat[[iv]])
+    fit <- lm(y ~ x)
+    plot(y ~ x, main = year,
+         xlab = iv, ylab = dv)
+    lines(x, predict(fit), col = 'blue')
+  }
+
+viz_lm(gapminder, "lifeExp", "gdpPercap", 1977)
+```
+

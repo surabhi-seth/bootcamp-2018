@@ -1,0 +1,21 @@
+---
+title: "Rmd Exercise Template"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Let's start
+
+```{r}
+here::here("data", "gapminder5.csv")
+
+gapminder <- read.csv()
+```
+
+
+
+

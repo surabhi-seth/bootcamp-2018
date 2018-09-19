@@ -1,0 +1,117 @@
+---
+title: "Day 3 session 3"
+author: "Surabhi S"
+date: "9/19/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+
+source(here::here("data/day3_objects.R"))
+
+ggplot(data = gapminder07) + 
+  geom_point(mapping = aes(x = gdpPercap, y = lifeExp))
+
+ggplot(gapminder07) + 
+  geom_point(aes(x = log(pop), y = log(gdpPercap))) +
+  labs(title="Exercise 1", x="Log of Population", y="Log of GDP per Capita")
+
+merged_energy %>% mutate(total_hydro=small_hydro+large_hydro) %>% 
+  group_by(datetime) %>% 
+  summarise(output=sum(total_hydro)) %>% 
+  ggplot() + 
+  geom_col(aes(x=datetime, y=output)) + 
+  labs(title="Total hydro energy generated, by hour", x="Hour", y="Output (MW)")
+
+merged_energy %>% mutate(total_hydro=small_hydro+large_hydro) %>% 
+  ggplot() + 
+  geom_col(aes(x=datetime, y=total_hydro)) + 
+  labs(title="Total hydro energy generated, by hour", x="Time", y="Hydro Output (MW)")
+
+```
+```{r}
+imports %>%
+  ggplot() + 
+  geom_line(aes(x=datetime, y=imports), col="purple", size=1.5) + 
+  labs(title="Energy imports over time", x="Hour", y="Amount imported (MW)")
+
+long_gen %>% group_by(source) %>%
+  summarise(total_output=sum(output), mean_output=mean(output)) %>%
+  ggplot() + geom_col(aes(x=source, y=total_output), fill="darkred") +
+  labs(title="Output across sources", x="Source", y="Total Output") +
+  geom_hline(aes(yintercept=mean(total_output))) 
+
+imports %>%
+  ggplot() + geom_line(aes(x=datetime, y=imports), col="red") + 
+  scale_x_datetime(date_labels="%H:%M", date_breaks="12 hours") +
+  labs(title="Energy imports over time in California", subtitle="Hourly data from September 3-9, 2018", x="Hour", y="Amount imported (MW)") + 
+  theme_minimal()
+```
+
+```{r}
+long_merged_energy %>% 
+  filter(source=="wind" | source == "solar" | source=="geothermal")  %>%
+  ggplot() + 
+  geom_line(aes(x=datetime, y=output, group=source, col=source), size=1.5) + 
+  labs(title="Wind, solar & geothermal output", x="Hour", y="Output (MW)")
+
+```
+```{r}
+long_gen %>% merge(regroup,by.x="source", by.y = "type" ) %>%
+  mutate(hour=hour(datetime)) %>%
+  group_by(group,hour) %>%
+  summarise(mean_output=mean(output)) %>%
+  ggplot() + geom_line(aes(x=hour,y=mean_output, group=group, col=group)) +
+  labs(title="Avg hourly output", x="Hour", y="Output (MW)")
+
+long_gen %>% merge(regroup,by.x="source", by.y = "type" ) %>%
+  mutate(hour=hour(datetime)) %>%
+  group_by(group,hour) %>%
+  summarise(mean_output=mean(output)) %>%
+  ggplot() + geom_area(aes(x=hour,y=mean_output, group=group, fill=group)) +
+  labs(title="Avg hourly output", x="Hour", y="Output (MW)")
+
+
+long_gen %>% merge(regroup,by.x="source", by.y = "type" ) %>%
+  mutate(hour=hour(datetime)) %>%
+  group_by(source,hour) %>%
+  summarise(output=mean(output)) %>%
+  ggplot() + geom_line(aes(x=hour,y=output, group=source, col=source)) +
+  labs(title="Avg hourly output", x="Hour", y="Output (MW)")
+
+long_gen %>% merge(regroup,by.x="source", by.y = "type" ) %>%
+  mutate(hour=hour(datetime)) %>%
+  group_by(source,hour) %>%
+  summarise(output=mean(output)) %>%
+  ggplot() + geom_area(aes(x=hour,y=output, group=source, fill=source)) +
+  labs(title="Avg hourly output", x="Hour", y="Output (MW)")
+
+long_gen %>% merge(regroup,by.x="source", by.y = "type" ) %>%
+  mutate(hour=hour(datetime)) %>%
+  group_by(source,hour) %>%
+  summarise(output=mean(output)) %>%
+  ggplot() + geom_line(aes(x=hour,y=output)) +
+  facet_wrap(~source, scales="free")
+  labs(title="Avg hourly output", x="Hour", y="Output (MW)")
+  
+  tmp <- long_gen %>% merge(regroup,by.x="source", by.y = "type" ) %>%
+  mutate(hour=hour(datetime)) %>%
+  group_by(source,hour) %>%
+  summarise(output=mean(output))
+  
+  # long_gen %>% merge(regroup,by.x="source", by.y = "type" ) %>%
+  # select (source,group,output, datetime) %>%
+  # mutate(hour=hour(datetime)) %>%
+  # group_by(source,hour) %>%
+  # select(source,hour, summarise(mean_output=mean(output))) %>%
+  # ggplot() + geom_line(aes(x=hour,y=mean_output, group=source, fill=source)) +
+  # facet_wrap(~source, scales="free")
+  # labs(title="Avg hourly output", x="Hour", y="Output (MW)")
+
+```
+

@@ -1,0 +1,48 @@
+---
+title: "Day3RExercise_SethSurabhi"
+author: "Surabhi S"
+date: "9/19/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+here::here("nys_schools.csv")
+here::here("nys_acs.csv")
+schools <- read.csv(here::here("data", "nys_schools.csv"), stringsAsFactors = F)
+acs <- read.csv(here::here("data", "nys_acs.csv"), stringsAsFactors = F)
+
+str(schools)
+summary(schools)
+summary(acs)
+
+```
+
+```{r}
+nrow(schools)
+ncol(schools)
+schools[schools == -99] <- NA
+
+# for (i in 1:nrow(schools))
+# {
+#   for(j in 1:ncol(schools))
+#   {
+#     if (is.na(schools[i,j])) 
+#       {schools[i,j] <- mean(schools[,j])}
+#   }
+# }
+
+ for(j in 1:ncol(schools))
+   {
+     if (is.na(schools[,j])) 
+       {schools[,j] <- mean(schools[,j])}
+   }
+
+```
+
+

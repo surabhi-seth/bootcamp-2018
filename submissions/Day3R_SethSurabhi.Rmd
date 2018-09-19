@@ -1,0 +1,68 @@
+---
+title: "Day 3 R"
+author: "Surabhi S"
+date: "9/19/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(readr)
+library(lubridate)
+generation <- read.csv(here::here("data", "generation.csv"),stringsAsFactors=F)
+imports <- read.csv(here::here("data", "imports.csv"),stringsAsFactors=F)
+str(imports)
+class(generation$datetime)
+generation$datetime <- as_datetime(generation$datetime)
+imports$datetime <- as_datetime(imports$datetime)
+```
+```{r}
+library(reshape2)
+head(generation)
+#long_gen <- melt(generation, id.vars = "datetime",
+#                           variable.name = "source",
+#                           value.name = "usage")
+head(long_gen)
+long_gen[order(long_gen$datetime)[1:20], ]
+merged_energy <- merge(generation,imports, by.x = "datetime", by.y = "datetime")
+head(merged_energy)
+long_merged_energy <- melt(merged_energy, id.vars = "datetime",
+                           variable.name = "source",
+                           value.name = "usage")
+
+```
+
+```{r}
+library(dplyr)
+tmp <- select(merged_energy, contains("hydro"), starts_with("bio"), -small_hydro)
+tmp <- filter(merged_energy, imports > 7000,natural_gas < 7000)
+tmp <- mutate(long_merged_energy, log_usage = log(usage))
+summarize(long_merged_energy, total = sum(usage, na.rm = T))
+
+tmp <- merged_energy %>% 
+  select(-datetime) %>%
+  mutate(total_usage = rowSums(., na.rm = T)) %>% 
+  summarize(total_usage = sum(total_usage, na.rm = T))
+
+merged_energy %>%
+  select(contains("hydro")) %>%
+  mutate(total_hydro = rowSums(., na.rm = T)) %>%
+  summarise(mean(total_hydro))
+
+tmp <- long_merged_energy %>% 
+  group_by(source) %>%
+  summarise(sum_usage = sum(usage, na.rm = T))
+```
+
+```{r}
+merged_energy %>% melt(., id.vars = "datetime",
+                           variable.name = "source",
+                           value.name = "usage") %>%
+  select(-datetime) %>% group_by(source) %>%
+  summarise(mean_usage = mean(usage, na.rm = T))
+```
+
+
+

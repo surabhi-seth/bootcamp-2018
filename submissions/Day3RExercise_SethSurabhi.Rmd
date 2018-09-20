@@ -1,0 +1,72 @@
+---
+title: "Day3RExercise_SethSurabhi"
+author: "Surabhi S"
+date: "9/19/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+# Using here to construct the path relative to the wd
+# Prefer read_csv over read.csv coz amongst other things, the former leads to summary showing NAs
+# See how na in the read_csv arg replaces values to NA
+schools <- read_csv(here::here("data", "nys_schools.csv"),na = c("-99", "NA"))
+schools_with99 <- read_csv(here::here("data", "nys_schools.csv"))
+str(schools)
+summary(schools)
+summary(schools_with99)
+
+acs <- read_csv(here::here("data", "nys_acs.csv"))
+summary(acs)
+
+```
+
+```{r}
+#dat <- data.frame(v1=1:5,v2=letters[1:5],v3=rnorm(5),v4=c(1,2,'c','d',5))
+# schools_with99[schools_with99 == -99] <- NA
+
+nm<-"mean_ela_score"
+
+#  [ ] still returns a df of a column
+schools[11]
+schools[,11]
+schools[nm]
+class(schools[11])
+class(schools[,11])
+class(schools[nm])
+
+# whereas [[ ]] returns a vector
+schools[[11]]
+schools[[nm]]
+# schools[[,11]] - This one gives error
+class(schools[[11]])
+class(schools[[nm]])
+
+# Phew! Finally defaulting NAs to mean of the column
+# is.numeric will return a TRUE or FALSE appropriately only if I pass a vector. If a pass a df, it always returns a FALSE. Therefore using [[ ]]
+for(i in 1:ncol(schools)){
+  if (is.numeric(schools[[i]]))
+  {
+  schools[is.na(schools[i]), i] <- 
+    mean(schools[[i]], na.rm = TRUE)
+  }
+ }
+
+```
+
+```{r}
+acs$povertyGroup[acs$median_household_income < quantile(acs$median_household_income, 0.25)] <- 'High'
+acs$povertyGroup[
+  acs$median_household_income > quantile(acs$median_household_income, 0.25) &
+    acs$median_household_income <= quantile(acs$median_household_income, 0.75)] <- 'Medium'
+acs$povertyGroup[acs$median_household_income > quantile(acs$median_household_income, 0.75)] <- 'Low'
+
+```
+
+
+

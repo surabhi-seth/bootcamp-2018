@@ -10,16 +10,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## R Markdown
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
 
 ```{r}
 # Using here to construct the path relative to the wd
 # Prefer read_csv over read.csv coz amongst other things, the former leads to summary showing NAs
 # See how na in the read_csv arg replaces values to NA
 schools <- read_csv(here::here("data", "nys_schools.csv"),na = c("-99", "NA"))
-schools_with99 <- read_csv(here::here("data", "nys_schools.csv"))
 str(schools)
 summary(schools)
-summary(schools_with99)
 
 acs <- read_csv(here::here("data", "nys_acs.csv"))
 summary(acs)
@@ -46,7 +49,9 @@ schools[[nm]]
 # schools[[,11]] - This one gives error
 class(schools[[11]])
 class(schools[[nm]])
+```
 
+```{r}
 # Phew! Finally defaulting NAs to mean of the column
 # is.numeric will return a TRUE or FALSE appropriately only if I pass a vector. If a pass a df, it always returns a FALSE. Therefore using [[ ]]
 for(i in 1:ncol(schools)){
@@ -60,6 +65,7 @@ for(i in 1:ncol(schools)){
 ```
 
 ```{r}
+# One way of assigning groups based on poverty - but I don't like it :|
 acs$povertyGroup[acs$median_household_income < quantile(acs$median_household_income, 0.25)] <- 'High'
 acs$povertyGroup[
   acs$median_household_income > quantile(acs$median_household_income, 0.25) &
@@ -68,5 +74,38 @@ acs$povertyGroup[acs$median_household_income > quantile(acs$median_household_inc
 
 ```
 
+```{r}
+county_incomes <- acs %>% group_by(county_name) %>% summarise(avg_income_over_yrs= mean(median_household_income))
+summary(county_incomes)
+ggplot(county_incomes) + geom_boxplot(aes(y=avg_income_over_yrs)) +
+  labs(title="Box plot for median incomes of counties", y="Average Income Over Years")
+
+county_incomes$povertyGroup <- NA
+county_incomes$povertyGroup[county_incomes$avg_income_over_yrs <= quantile(county_incomes$avg_income_over_yrs, 0.25)] <- 'High'
+
+county_incomes$povertyGroup[
+  county_incomes$avg_income_over_yrs > quantile(county_incomes$avg_income_over_yrs, 0.25) &
+    county_incomes$avg_income_over_yrs <= quantile(county_incomes$avg_income_over_yrs, 0.75)] <- 'Medium'
+
+county_incomes$povertyGroup[county_incomes$avg_income_over_yrs > quantile(county_incomes$avg_income_over_yrs, 0.75)] <- 'Low'
+```
+
+```{r}
+# Standardising the test scores
+schools %>% group_by(year) %>%
+  summarise(std_ela = scale(mean_ela_score))
+
+schools$std_ela <- NA
+schools$std_math <- NA
+for (y in unique(schools$year))
+{
+  schools$std_ela[schools$year == y] <- scale(schools$mean_ela_score[schools$year == y])
+  schools$std_math[schools$year == y] <- scale(schools$mean_math_score[schools$year == y])
+}
+```
+
+```{r}
+
+```
 
 

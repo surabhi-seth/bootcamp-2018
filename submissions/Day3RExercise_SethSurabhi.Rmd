@@ -92,9 +92,6 @@ county_incomes$povertyGroup[county_incomes$avg_income_over_yrs > quantile(county
 
 ```{r}
 # Standardising the test scores
-schools %>% group_by(year) %>%
-  summarise(std_ela = scale(mean_ela_score))
-
 schools$std_ela <- NA
 schools$std_math <- NA
 for (y in unique(schools$year))

@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(lubridate)
 ```
 
 ```{r}
@@ -23,6 +24,7 @@ library(ggplot2)
 schools <- read_csv(here::here("data", "nys_schools.csv"),na = c("-99", "NA"))
 str(schools)
 summary(schools)
+dim(schools)
 
 acs <- read_csv(here::here("data", "nys_acs.csv"))
 summary(acs)
@@ -30,6 +32,7 @@ summary(acs)
 ```
 
 ```{r}
+#This chunk is my struggle to understand how dfs work and not directly related to the exercise!
 #dat <- data.frame(v1=1:5,v2=letters[1:5],v3=rnorm(5),v4=c(1,2,'c','d',5))
 # schools_with99[schools_with99 == -99] <- NA
 
@@ -46,54 +49,77 @@ class(schools[nm])
 # whereas [[ ]] returns a vector
 schools[[11]]
 schools[[nm]]
+schools$mean_ela_score
 # schools[[,11]] - This one gives error
 class(schools[[11]])
 class(schools[[nm]])
+
+# Phew!
 ```
 
 ```{r}
-# Phew! Finally defaulting NAs to mean of the column
-# is.numeric will return a TRUE or FALSE appropriately only if I pass a vector. If a pass a df, it always returns a FALSE. Therefore using [[ ]]
-for(i in 1:ncol(schools)){
-  if (is.numeric(schools[[i]]))
-  {
-  schools[is.na(schools[i]), i] <- 
-    mean(schools[[i]], na.rm = TRUE)
-  }
- }
+# I can default NAs to mean of the respective column. But on second thoughts, that doesn't sound like a good approach. So commenting this chunk.
 
+# for(i in 1:ncol(schools)){
+#   if (is.numeric(schools[[i]]))
+#   {
+#   schools[is.na(schools[i]), i] <- 
+#     mean(schools[[i]], na.rm = TRUE)
+#   }
+# }
+
+# Note: is.numeric will return a TRUE or FALSE appropriately only if I pass a vector. If a pass a df, it always returns a FALSE. Therefore using [[ ]]
 ```
 
 ```{r}
-# One way of assigning groups based on poverty - but I don't like it :|
-acs$povertyGroup[acs$median_household_income < quantile(acs$median_household_income, 0.25)] <- 'High'
-acs$povertyGroup[
-  acs$median_household_income > quantile(acs$median_household_income, 0.25) &
-    acs$median_household_income <= quantile(acs$median_household_income, 0.75)] <- 'Medium'
-acs$povertyGroup[acs$median_household_income > quantile(acs$median_household_income, 0.75)] <- 'Low'
+# Some more cleaning required because sum of per_free_lunch and per_reduced_lunch is greater than 1 in some cases.
+schools[is.na(schools$per_free_lunch), ]
+schools[is.na(schools$per_reduced_lunch), ]
+schools[schools$per_free_lunch>1,]
+schools[schools$per_reduced_lunch >1,]
+schools[schools$per_free_lunch + schools$per_reduced_lunch >1,] # I will try to change these records to NA
 
-```
+# Both lines below give exactly the same output
+# schools[schools$per_free_lunch + schools$per_reduced_lunch >1,]$per_free_lunch
+# schools$per_free_lunch[schools$per_free_lunch + schools$per_reduced_lunch >1]
 
-```{r}
-county_incomes <- acs %>% group_by(county_name) %>% summarise(avg_income_over_yrs= mean(median_household_income))
-summary(county_incomes)
-ggplot(county_incomes) + geom_boxplot(aes(y=avg_income_over_yrs)) +
-  labs(title="Box plot for median incomes of counties", y="Average Income Over Years")
+# But still this one gives error while assigning NA
+# schools[schools$per_free_lunch + schools$per_reduced_lunch >1,]$per_free_lunch <- NA
 
-county_incomes$povertyGroup <- NA
-county_incomes$povertyGroup[county_incomes$avg_income_over_yrs <= quantile(county_incomes$avg_income_over_yrs, 0.25)] <- 'High'
+# But this one executes. Why is the behavior different???
+# schools$per_free_lunch[schools$per_free_lunch + schools$per_reduced_lunch >1] <- NA
 
-county_incomes$povertyGroup[
-  county_incomes$avg_income_over_yrs > quantile(county_incomes$avg_income_over_yrs, 0.25) &
-    county_incomes$avg_income_over_yrs <= quantile(county_incomes$avg_income_over_yrs, 0.75)] <- 'Medium'
+# But I am still stuck coz this next line doesn't work coz of all NAs being returned
+# schools$per_reduced_lunch[schools$per_free_lunch + schools$per_reduced_lunch >1] <- NA
 
-county_incomes$povertyGroup[county_incomes$avg_income_over_yrs > quantile(county_incomes$avg_income_over_yrs, 0.75)] <- 'Low'
-```
-
-```{r}
-# Standardising the test scores
+# Now to our trusted friend dplyr
+schools$seqid <- NA
 schools$std_ela <- NA
 schools$std_math <- NA
+
+schools <- schools %>% mutate(seqid=seq(from=1, to=nrow(schools), b=1))
+
+schools <- schools %>% 
+  mutate(per_free_lunch = 
+           ifelse((per_free_lunch + per_reduced_lunch > 1),NA,per_free_lunch), 
+         per_reduced_lunch = 
+           ifelse((per_free_lunch + per_reduced_lunch > 1),NA,per_reduced_lunch)) 
+```
+
+```{r}
+# Calculating the absolute number of students with free and reduced price lunches
+schools$num_free_lunch <- NA
+schools$num_reduced_lunch <- NA
+
+tmp <- schools %>% filter(is.na(per_free_lunch) | is.na(per_reduced_lunch))
+schools <- schools %>%
+  mutate(num_free_lunch=round(per_free_lunch*total_enroll),
+         num_reduced_lunch=round(per_reduced_lunch*total_enroll))
+```
+
+
+```{r}
+# Standardising the test scores in schools df, this time using traditional methods
 for (y in unique(schools$year))
 {
   schools$std_ela[schools$year == y] <- scale(schools$mean_ela_score[schools$year == y])
@@ -102,7 +128,107 @@ for (y in unique(schools$year))
 ```
 
 ```{r}
+# One way of assigning groups based on poverty - but I don't like it :|
+# Therefore, commenting this chunk too
+
+# acs$povertyGroup[acs$median_household_income < quantile(acs$median_household_income, 0.25)] <- 'High'
+# acs$povertyGroup[
+#   acs$median_household_income > quantile(acs$median_household_income, 0.25) &
+#     acs$median_household_income <= quantile(acs$median_household_income, 0.75)] <- 'Medium'
+# acs$povertyGroup[acs$median_household_income > quantile(acs$median_household_income, 0.75)] <- 'Low'
+```
+
+```{r}
+# Taking the average of median hh incomes across years for each county
+county_incomes <- acs %>% group_by(county_name) %>% summarise(avg_income_over_yrs= mean(median_household_income))
+summary(county_incomes)
+ggplot(county_incomes) + geom_boxplot(aes(y=avg_income_over_yrs)) +
+  labs(title="Box plot for median incomes of counties", y="Average Income Over Years")
+
+#Assigning poverty groups. Counties in first quartile constitute High poverty group
+county_incomes$povertyGroup <- NA
+county_incomes$povertyGroup[county_incomes$avg_income_over_yrs <= quantile(county_incomes$avg_income_over_yrs, 0.25)] <- 'High'
+
+#Counties in second and third quartiles constitute Medium poverty group
+county_incomes$povertyGroup[
+  county_incomes$avg_income_over_yrs > quantile(county_incomes$avg_income_over_yrs, 0.25) &
+    county_incomes$avg_income_over_yrs <= quantile(county_incomes$avg_income_over_yrs, 0.75)] <- 'Medium'
+
+#Counties in fourth quartile constitute Low poverty group
+county_incomes$povertyGroup[county_incomes$avg_income_over_yrs > quantile(county_incomes$avg_income_over_yrs, 0.75)] <- 'Low'
+
+county_incomes$povertyGroup <- factor(county_incomes$povertyGroup, levels=c("High","Medium","Low"))
+summary(county_incomes)
 
 ```
 
+```{r}
+# Summarising acs county data
+acs_summarised <- acs %>% 
+  group_by(county_name) %>% summarise(avg_county_per_poverty=mean(county_per_poverty),
+                                      avg_income_over_yrs=mean(median_household_income)) %>%
+  left_join(.,select(county_incomes,county_name,povertyGroup),by="county_name")
+summary(acs_summarised)
+```
+
+```{r}
+# Summarising schools data
+schools_summarised <- schools %>% group_by(school_name) %>%
+  summarise(avg_std_ela=mean(std_ela,na.rm = T), 
+            avg_std_math=mean(std_math,na.rm = T),
+            avg_num_free_lunch=mean(num_free_lunch,na.rm = T),
+            avg_num_reduced_lunch=mean(num_reduced_lunch,na.rm = T),
+            avg_total_enroll=mean(total_enroll,na.rm = T)) %>%
+  mutate(avg_per_free_lunch = avg_num_free_lunch/avg_total_enroll,
+         avg_per_reduced_lunch = avg_num_reduced_lunch/avg_total_enroll)
+
+school_county_mamping <- schools %>% group_by(school_name,county_name) %>%
+  summarise()
+
+schools_summarised <- schools_summarised %>%
+  full_join(school_county_mamping,by="school_name")
+
+# Summarising county data
+county_summarised <- schools %>% group_by(county_name) %>%
+  summarise(avg_std_ela=mean(std_ela,na.rm = T), 
+            avg_std_math=mean(std_math,na.rm = T),
+            avg_num_free_lunch=mean(num_free_lunch,na.rm = T),
+            avg_num_reduced_lunch=mean(num_reduced_lunch,na.rm = T),
+            avg_total_enroll=mean(total_enroll,na.rm = T)) %>%
+  mutate(avg_per_free_lunch = avg_num_free_lunch/avg_total_enroll,
+         avg_per_reduced_lunch = avg_num_reduced_lunch/avg_total_enroll)
+
+county_summarised <- county_summarised %>%
+  full_join(., acs_summarised, by="county_name")
+summary(county_summarised)
+```
+
+```{r}
+top5_county <- county_summarised %>% 
+  arrange(.,avg_county_per_poverty) %>% head(5) %>%
+  select(county_name, povertyGroup, avg_county_per_poverty, 
+         avg_per_free_lunch, avg_per_reduced_lunch, 
+         avg_std_ela, avg_std_math)
+
+bottom5_county <- county_summarised %>% 
+  arrange(.,desc(avg_county_per_poverty)) %>% head(5) %>%
+  select(county_name, povertyGroup, avg_county_per_poverty, 
+         avg_per_free_lunch, avg_per_reduced_lunch, 
+         avg_std_ela, avg_std_math)
+```
+
+```{r}
+# Plottting - yay!!
+ggplot(schools_summarised) + 
+  geom_point(aes(x=avg_per_free_lunch+avg_per_reduced_lunch, 
+                 y=avg_std_math+avg_std_ela))
+
+ggplot(county_summarised) + 
+  geom_point(aes(x=avg_per_free_lunch+avg_per_reduced_lunch, 
+                 y=avg_std_math+avg_std_ela))
+
+county_summarised %>% filter(!is.na(povertyGroup)) %>% 
+  ggplot() + 
+  geom_boxplot(aes(x=povertyGroup, y=avg_std_math+avg_std_ela))
+```
 

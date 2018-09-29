@@ -54,6 +54,10 @@ schools$mean_ela_score
 class(schools[[11]])
 class(schools[[nm]])
 
+#3 ways of finding one value
+schools$mean_ela_score[schools$seqid==1] # numeric class
+schools[schools$seqid==1,]$mean_ela_score # numeric class
+schools[schools$seqid == 1, 11] # df class
 # Phew!
 ```
 

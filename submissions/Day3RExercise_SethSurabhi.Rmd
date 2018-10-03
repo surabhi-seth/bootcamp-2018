@@ -22,7 +22,6 @@ library(lubridate)
 # Prefer read_csv over read.csv coz amongst other things, the former leads to summary showing NAs
 # See how na in the read_csv arg replaces values to NA
 schools <- read_csv(here::here("data", "nys_schools.csv"),na = c("-99", "NA"))
-str(schools)
 summary(schools)
 dim(schools)
 

@@ -122,12 +122,22 @@ schools <- schools %>%
 
 
 ```{r}
-# Standardising the test scores in schools df, this time using traditional methods
+# Standardising the test scores in schools df  using traditional methods
 for (y in unique(schools$year))
-{
-  schools$std_ela[schools$year == y] <- scale(schools$mean_ela_score[schools$year == y])
-  schools$std_math[schools$year == y] <- scale(schools$mean_math_score[schools$year == y])
-}
+# {
+#   schools$std_ela[schools$year == y] <- scale(schools$mean_ela_score[schools$year == y])
+#   schools$std_math[schools$year == y] <- scale(schools$mean_math_score[schools$year == y])
+# }
+
+# Standardizing using dplyr and scale
+schools <- schools %>% group_by(year) %>% 
+  mutate(std_ela=scale(mean_ela_score), std_math=scale(mean_math_score)) %>% ungroup
+
+# Standardizing using dplyr and without using scale
+# schools %>% group_by(year) %>% 
+#   mutate(sdmath = sd(mean_math_score, na.rm = T), 
+#          meanmath = mean(mean_math_score, na.rm = T)) %>%
+#   ungroup %>% mutate(std_math2 = (mean_math_score - meanmath)/sdmath)
 ```
 
 ```{r}
